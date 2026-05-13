@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WOLF LABS | The Minimalist Pantry</title>
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;700&family=Outfit:wght@300;400;500;700;800&family=Caveat:wght@700&display=swap" rel="stylesheet">
+    
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        bgDark: '#2C2925',       /* Dark Wood / Taupe */
+                        panelDark: '#3A3631',    /* Lighter Taupe */
+                        panelHover: '#4D4741',   
+                        textLight: '#F5F5F0',    /* Off-White */
+                        textMuted: '#A8A29E',    /* Stone 400 */
+                        accentSage: '#8BA888',   /* Sage Green */
+                        accentBamboo: '#D4B886', /* Warm Bamboo */
+                        dangerRed: '#E57373'     /* Soft Coral/Red */
+                    },
+                    fontFamily: {
+                        heading: ['Outfit', 'sans-serif'],
+                        body: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                        hand: ['Caveat', 'cursive']
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body { background-color: #2C2925; color: #F5F5F0; overflow: hidden; }
+        
+        /* Eye-Care Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #2C2925; }
+        ::-webkit-scrollbar-thumb { background: #4D4741; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #8BA888; }
+
+        /* Animations */
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-10px); }
+            40%, 80% { transform: translateX(10px); }
+        }
+        .shake { animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both; border-color: #E57373 !important; }
+        
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .fade-in { animation: fadeIn 0.4s ease-out forwards; }
+
+        /* UI Styling */
+        .glass-panel { background: rgba(58, 54, 49, 0.85); backdrop-filter: blur(12px); border: 1px solid rgba(139, 168, 136, 0.15); }
+        .glow-sage { text-shadow: 0 0 15px rgba(139, 168, 136, 0.5); }
+        .glow-bamboo { text-shadow: 0 0 15px rgba(212, 184, 134, 0.5); }
+        
+        .drawer { position: fixed; top: 0; bottom: 80px; width: 340px; background: #3A3631; z-index: 100; transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 0 40px rgba(0,0,0,0.6); border: 1px solid rgba(212, 184, 134, 0.1); }
+        .drawer-left { left: 0; transform: translateX(-100%); border-left: none; }
+        .drawer-right { right: 0; transform: translateX(100%); border-right: none; }
+        .drawer.open { transform: translateX(0); }
+
+        /* Custom Input */
+        input[type=range].zen-slider { -webkit-appearance: none; width: 100%; background: transparent; }
+        input[type=range].zen-slider::-webkit-slider-runnable-track { width: 100%; height: 12px; cursor: pointer; background: #4D4741; border-radius: 10px; border: 1px solid rgba(139, 168, 136, 0.2); }
+        input[type=range].zen-slider::-webkit-slider-thumb { -webkit-appearance: none; height: 36px; width: 36px; border-radius: 50%; background: #2C2925; border: 4px solid #8BA888; cursor: pointer; margin-top: -12px; box-shadow: 0 0 15px rgba(139, 168, 136, 0.4); transition: transform 0.2s; }
+        input[type=range].zen-slider::-webkit-slider-thumb:hover { transform: scale(1.1); }
+        
+        #confetti-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 200; }
+        
+        .btn-wolf { transition: all 0.2s ease; }
+        .btn-wolf:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(139, 168, 136, 0.3); }
+        .btn-wolf:active { transform: translateY(0); }
+
+        /* Flip Card */
+        .flip-container { perspective: 1000px; cursor: pointer; }
+        .flip-inner { position: relative; width: 100%; height: 100%; text-align: center; transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1); transform-style: preserve-3d; }
+        .flip-container.flipped .flip-inner { transform: rotateY(180deg); }
+        .flip-front, .flip-back { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; border-radius: 1rem; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 2rem; }
+        .flip-front { background: #3A3631; border: 2px solid #4D4741; }
+        .flip-back { background: #2C2925; border: 2px solid #D4B886; transform: rotateY(180deg); }
+    </style>
+</head>
+<body class="font-body h-screen flex flex-col antialiased select-none">
+
+    <canvas id="confetti-canvas"></canvas>
+
+    <!-- Start Dashboard -->
+    <div id="dashboard" class="absolute inset-0 z-[150] flex flex-col items-center justify-center bg-bgDark">
+        <div class="absolute inset-0 opacity-10 bg-[radial-gradient(ellipse_at_center,_#8BA888_0%,_transparent_60%)] pointer-events-none"></div>
+        <div class="max-w-4xl text-center space-y-8 fade-in px-6 relative z-10">
+            <div class="glass-panel p-6 mb-4 mt-10 inline-block border-t-4 border-accentSage rounded-3xl">
+                <div class="w-24 h-24 bg-bgDark rounded-full flex items-center justify-center border-2 border-accentSage shadow-[0_0_30px_rgba(139,168,136,0.2)_inset]">
+                    <i class="fa-solid fa-bowl-rice text-5xl text-accentSage glow-sage"></i>
+                </div>
+            </div>
+            <div class="space-y-4">
+                <p class="text-accentBamboo font-mono font-bold text-sm tracking-[0.4em] uppercase border border-accentBamboo/20 px-5 py-2 rounded bg-accentBamboo/5 inline-block glow-bamboo">Easy Reader Module</p>
+                <h1 class="text-5xl md:text-7xl font-heading font-light tracking-widest uppercase text-textLight">THE MINIMALIST <br><span class="text-accentSage font-bold glow-sage">PANTRY</span></h1>
+                <p class="text-xl text-textMuted max-w-2xl mx-auto font-medium leading-relaxed font-body">Less is more. Learn food vocabulary and master <span class="text-accentSage font-bold">Countable/Uncountable Nouns</span> and <span class="text-accentBamboo font-bold">Some/Any</span>.</p>
+            </div>
+            <button onclick="startGame()" class="mt-8 px-16 py-6 bg-accentSage text-bgDark rounded-full font-heading font-bold text-2xl tracking-widest uppercase hover:scale-105 transition-all shadow-xl shadow-accentSage/20 flex items-center gap-4 mx-auto">
+                <i class="fa-solid fa-door-open"></i> ENTER KITCHEN
+            </button>
+        </div>
+    </div>
+
+    <!-- Top HUD -->
+    <header id="hud-top" class="h-20 glass-panel flex items-center justify-between px-8 z-50 shrink-0 border-b border-panelHover">
+        <div class="flex items-center gap-12">
+            <div class="flex flex-col gap-1">
+                <div class="flex justify-between items-end"><span class="text-[10px] font-bold text-textMuted uppercase tracking-widest font-mono">Clutter (HP)</span><span id="txt-hp" class="text-[10px] font-mono text-dangerRed">100</span></div>
+                <div class="w-36 h-2 bg-bgDark rounded-full overflow-hidden border border-panelHover">
+                    <div id="bar-hp" class="h-full bg-dangerRed transition-all duration-300 shadow-[0_0_10px_#E57373]" style="width: 100%"></div>
+                </div>
+            </div>
+            <div class="flex flex-col gap-1">
+                <div class="flex justify-between items-end"><span class="text-[10px] font-bold text-textMuted uppercase tracking-widest font-mono">Zen (XP)</span><span id="txt-xp" class="text-[10px] font-mono text-accentSage">0/250</span></div>
+                <div class="w-36 h-2 bg-bgDark rounded-full overflow-hidden border border-panelHover">
+                    <div id="bar-xp" class="h-full bg-accentSage transition-all duration-300 shadow-[0_0_10px_#8BA888]" style="width: 0%"></div>
+                </div>
+            </div>
+        </div>
+        <div class="flex items-center gap-6">
+            <button onclick="toggleFullscreen()" class="w-10 h-10 flex items-center justify-center rounded-full bg-panelDark border border-panelHover text-textMuted hover:text-accentSage transition-all"><i class="fa-solid fa-expand"></i></button>
+            <button onclick="toggleDrawer('teacher')" class="px-5 py-2 bg-accentSage/10 text-accentSage border border-accentSage/40 rounded-xl text-[10px] font-bold uppercase tracking-widest flex items-center gap-2 hover:bg-accentSage hover:text-bgDark transition-all font-mono">
+                <i class="fa-solid fa-leaf"></i> Master
+            </button>
+            <div class="hidden lg:block text-right">
+                <p class="font-heading font-bold text-textLight leading-none tracking-widest">WOLF LABS</p>
+                <p class="text-[9px] text-accentBamboo font-mono uppercase mt-1 tracking-widest glow-bamboo">A1 Module</p>
+            </div>
+        </div>
+    </header>
+
+    <!-- Arena -->
+    <main id="mission-arena" class="flex-1 relative overflow-y-auto p-6 flex flex-col items-center justify-center">
+        <div id="step-container" class="w-full max-w-4xl transition-all duration-400"></div>
+    </main>
+
+    <!-- Console -->
+    <footer id="nav-console" class="h-20 glass-panel flex items-center justify-between px-8 z-50 shrink-0 border-t border-panelHover">
+        <button onclick="toggleDrawer('nav')" class="flex flex-col items-center gap-1 text-textMuted hover:text-accentSage transition-colors">
+            <i class="fa-solid fa-list-ul text-lg"></i>
+            <span class="text-[10px] font-mono font-bold tracking-widest">MENU</span>
+        </button>
+        
+        <div class="flex items-center gap-6">
+            <button id="btn-prev" onclick="navStep(-1)" class="w-12 h-12 rounded-full border border-panelHover text-textMuted hover:text-accentSage disabled:opacity-20 transition-all flex items-center justify-center">
+                <i class="fa-solid fa-backward-step"></i>
+            </button>
+            <div id="step-counter" class="font-mono font-bold text-accentSage bg-bgDark px-8 py-2 rounded-full border border-panelHover shadow-inner">
+                1 / 25
+            </div>
+            <button id="btn-next" onclick="navStep(1)" class="w-12 h-12 rounded-full bg-accentSage text-bgDark hover:scale-110 transition-all shadow-lg shadow-accentSage/20 flex items-center justify-center">
+                <i class="fa-solid fa-forward-step"></i>
+            </button>
+        </div>
+
+        <button onclick="toggleDrawer('whiteboard')" class="flex flex-col items-center gap-1 text-textMuted hover:text-accentSage transition-colors">
+            <i class="fa-solid fa-pen-nib text-lg"></i>
+            <span class="text-[10px] font-mono font-bold tracking-widest">NOTES</span>
+        </button>
+    </footer>
+
+    <!-- Drawers -->
+    <div id="drawer-nav" class="drawer drawer-left p-8 overflow-y-auto">
+        <h2 class="font-heading font-light text-2xl text-accentSage mb-6 border-b border-panelHover pb-4 uppercase tracking-widest">Lesson Map</h2>
+        <div id="index-list" class="space-y-2"></div>
+    </div>
+    
+    <div id="drawer-whiteboard" class="drawer drawer-right p-8 flex flex-col">
+        <h2 class="font-heading font-light text-2xl text-accentSage mb-6 border-b border-panelHover pb-4 uppercase tracking-widest">Journal</h2>
+        <textarea class="flex-1 bg-bgDark border border-panelHover rounded-2xl p-5 font-hand text-2xl text-textLight focus:outline-none focus:border-accentSage resize-none leading-relaxed" placeholder="Write your food vocabulary and grammar rules here..."></textarea>
+    </div>
+
+    <div id="drawer-teacher" class="drawer drawer-right p-8">
+        <div class="flex justify-between items-center mb-6 border-b border-panelHover pb-4">
+            <h2 class="font-heading font-bold text-2xl text-accentSage uppercase tracking-widest"><i class="fa-solid fa-leaf mr-2"></i>Zen Master</h2>
+            <button onclick="toggleDrawer('teacher')" class="text-textMuted hover:text-textLight"><i class="fa-solid fa-xmark text-xl"></i></button>
+        </div>
+        
+        <div class="bg-bgDark p-5 rounded-xl border border-panelHover shadow-inner mb-6">
+            <p class="text-[10px] font-mono text-accentBamboo uppercase tracking-[0.3em] mb-2 glow-bamboo">Module Goal</p>
+            <p class="text-sm text-textMuted leading-relaxed font-body">Level A1. Students learn food vocabulary and the difference between <strong class="text-accentSage font-bold">Countable / Uncountable</strong> nouns. They must master the use of <strong class="text-textLight">Some / Any</strong> and <strong class="text-accentBamboo font-bold">How much / How many</strong>.</p>
+        </div>
+        
+        <div class="space-y-3">
+            <p class="text-[10px] font-mono text-textMuted uppercase tracking-widest mb-2">Send Feedback</p>
+            <button onclick="triggerPraise('PERFECT GRAMMAR!', 'Great use of Some/Any.')" class="w-full py-4 bg-transparent text-accentSage border border-accentSage/50 rounded-xl font-bold text-xs hover:bg-accentSage hover:text-bgDark transition-all uppercase tracking-widest font-heading shadow-[0_0_10px_rgba(139,168,136,0.1)]">SEND: SAGE (CORRECT)</button>
+            <button onclick="triggerPraise('DELICIOUS!', 'Great food vocabulary.')" class="w-full py-4 bg-accentBamboo/10 text-accentBamboo border border-accentBamboo/50 rounded-xl font-bold text-xs hover:bg-accentBamboo hover:text-bgDark transition-all uppercase tracking-widest font-heading shadow-[0_0_10px_rgba(212,184,134,0.1)]">SEND: BAMBOO (VOCAB)</button>
+        </div>
+    </div>
+
+    <!-- Praise Overlay -->
+    <div id="praise-overlay" class="fixed inset-0 z-[6000] flex items-center justify-center bg-bgDark/95 backdrop-blur-sm opacity-0 pointer-events-none transition-opacity duration-300 p-4">
+        <div id="praise-card" class="glass-panel p-20 rounded-[3rem] text-center transform scale-50 transition-transform duration-500 border-t-8 shadow-2xl">
+            <h2 id="praise-main" class="font-heading text-5xl md:text-7xl font-light tracking-widest uppercase mb-4"></h2>
+            <p id="praise-sub" class="text-xl font-bold tracking-[0.3em] uppercase text-textLight font-mono"></p>
+        </div>
+    </div>
+
+    <script>
+        // --- GAME STATE ---
+        let state = { hp: 100, xp: 0, current: 0, maxSteps: 25 };
+
+        const readerText = `<strong>HIRO'S JOURNAL: LESS IS MORE</strong><br><br>"Hello, I am Hiro. I live a minimalist life in Tokyo. I only have 50 objects in my apartment. My kitchen is very clean and simple.<br><br>Let's look at my fridge. I have <strong>some</strong> apples and <strong>some</strong> milk. I don't have <strong>any</strong> meat because I am a vegetarian. I don't have <strong>any</strong> soda.<br><br>In my pantry, I have <strong>some</strong> rice and green tea. I don't have <strong>any</strong> pasta or cookies.<br><br><strong>How much</strong> food do I need? Not much. <strong>How many</strong> plates do I have? Only two. Simple is better."`;
+
+        // Helper for Fridge Scanner
+        function fridgeItemHTML(item) {
+            if(!item) return '';
+            const statusClass = item.hasSome ? '' : 'opacity-30 grayscale';
+            const xMark = item.hasSome ? '' : '<i class="fa-solid fa-xmark absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-7xl text-dangerRed drop-shadow-[0_0_10px_rgba(229,115,115,0.8)] z-10"></i>';
+            return `<div class="relative flex flex-col items-center group w-24">
+                ${xMark}
+                <i class="fa-solid ${item.icon} text-6xl text-gray-700 ${statusClass} group-hover:scale-110 transition-transform drop-shadow-sm"></i>
+                <span class="text-gray-800 font-bold font-mono mt-3 text-xs bg-white/60 px-3 py-1 rounded-full uppercase tracking-widest">${item.name}</span>
+            </div>`;
+        }
+
+        // --- LESSON DATA (25 Steps) ---
+        const lessonData = [
+            // Phase 1: Context & Mindset
+            { type: 'bGuide', title: 'Welcome to Zen', text: 'Welcome to Hiro\'s minimalist home. Today we will learn food vocabulary, the difference between things you can count and things you can\'t, and the philosophy of "Less is More".', icon: 'fa-seedling' },
+            { type: 'bSlider', title: 'Minimalist Check', text: 'How many things do you have in your bedroom?', minLabel: 'Only a bed (Minimalist)', maxLabel: 'Full of stuff! (Hoarder)', followUp: 'Do you prefer a room with a lot of decorations or a very simple, clean room?' },
+            { type: 'bRoleplay', title: 'The Clutter', text: 'Discuss your lifestyle with your Zen Master:', cards: ['Do you have too many clothes in your closet?', 'Is your room usually messy or clean?', 'Do you have a lot of food in your fridge right now?'] },
+            
+            // Phase 2: The Easy Reader
+            { type: 'bReader', title: 'Hiro\'s Journal', text: readerText, isAlert: false },
+            { type: 'bConsultQuiz', title: 'Fact Check', text: 'How many objects does Hiro have in his apartment?', options: ['50', '5', '500'], correct: 0 },
+            { type: 'bConsultQuiz', title: 'Fact Check', text: 'Why doesn\'t Hiro have any meat?', options: ['Because he hates cooking.', 'Because he is a vegetarian.', 'Because it is expensive.'], correct: 1 },
+            
+            // Phase 3: Grammar (Countable vs Uncountable)
+            { type: 'bGrammar', title: 'The Food Rules', ruleText: '<strong>COUNTABLE (Can count):</strong><br>Things we can count with numbers. They accept plural with "s".<br><em>Examples:</em> 1 apple, 2 apples, 3 eggs.<br><br><strong>UNCOUNTABLE (Cannot count):</strong><br>Things we measure or weigh (liquids, powders, abstract things). They NEVER have a plural.<br><em>Examples:</em> Milk, rice, water, meat. <br><span class="text-dangerRed">(Never say "milks" or "two rices")</span>', boxColor: 'accentSage' },
+            { type: 'bKanban', title: 'The Kitchen Sorter', catA: 'COUNTABLE', catB: 'UNCOUNTABLE', items: [{text: 'Banana', cat: 'A'}, {text: 'Water', cat: 'B'}, {text: 'Tomato', cat: 'A'}, {text: 'Coffee', cat: 'B'}, {text: 'Carrot', cat: 'A'}, {text: 'Pasta', cat: 'B'}] },
+            { type: 'bBamboozle', title: 'Reflex Check', statement: 'We can say: "I want two rices, please."', isTrue: false }, // Rice is uncountable
+
+            // Phase 4: Grammar (Some vs Any)
+            { type: 'bGrammar', title: 'The Fridge Inventory', ruleText: '<strong>(+) Affirmative Sentences:</strong><br>Use <strong>SOME</strong>.<br><em>Example:</em> I have <strong>some</strong> milk. There are <strong>some</strong> eggs.<br><br><strong>(-) Negative & (?) Questions:</strong><br>Use <strong>ANY</strong>.<br><em>Example:</em> I don\'t have <strong>any</strong> meat. Do you have <strong>any</strong> water?', boxColor: 'accentBamboo' },
+            { type: 'bTuner', title: 'Logic Switch', textA: 'I have any apples.', textB: 'I have some apples.', iconA: 'fa-triangle-exclamation text-dangerRed', iconB: 'fa-check text-accentBamboo', hintA: 'ERROR. "Any" is for negative/questions.', hintB: 'CORRECT! "Some" for affirmative.' },
+            { type: 'bTuner', title: 'Logic Switch 2', textA: 'There aren\'t some cookies.', textB: 'There aren\'t any cookies.', iconA: 'fa-triangle-exclamation text-dangerRed', iconB: 'fa-check text-accentBamboo', hintA: 'ERROR. Negative sentence needs "any".', hintB: 'CORRECT! Aren\'t = negative -> any.' },
+            { type: 'bWordBuilder', title: 'Sentence Assembly', words: ['kitchen', 'tea', 'some', 'is', 'in', 'the', 'There', 'green'], correct: ['There', 'is', 'some', 'green', 'tea', 'in', 'the', 'kitchen'] },
+
+            // Phase 5: The Fridge Scanner (Speaking)
+            { type: 'bGuide', title: 'Open the Fridge', text: 'You are going to inspect Hiro\'s fridge. Speak to your teacher and describe what you see using SOME and ANY.', icon: 'fa-door-open' },
+            { type: 'bFridgeScanner', title: 'Scan 1: Affirmative', items: [{icon: 'fa-egg', name: 'Eggs', hasSome: true}, {icon: 'fa-bottle-water', name: 'Water', hasSome: true}, {icon: 'fa-carrot', name: 'Carrots', hasSome: true}], expectedStart: 'There are...', expected: 'There are some eggs, there is some water, and there are some carrots.' },
+            { type: 'bFridgeScanner', title: 'Scan 2: Negative', items: [{icon: 'fa-cheese', name: 'Cheese', hasSome: false}, {icon: 'fa-drumstick-bite', name: 'Meat', hasSome: false}, {icon: 'fa-cookie', name: 'Cookies', hasSome: false}], expectedStart: 'There isn\'t...', expected: 'There isn\'t any cheese, there isn\'t any meat, and there aren\'t any cookies.' },
+
+            // Phase 6: Grammar (How much vs How many)
+            { type: 'bGrammar', title: 'Asking Questions', ruleText: '<strong>HOW MANY:</strong><br>Use with Countable Plural nouns.<br><em>Example:</em> <strong>How many</strong> <u>apples</u> do you have?<br><br><strong>HOW MUCH:</strong><br>Use with Uncountable nouns.<br><em>Example:</em> <strong>How much</strong> <u>water</u> do you drink?', boxColor: 'accentSage' },
+            { type: 'bConsultQuiz', title: 'Fill the gap', text: '_____ coffee do you drink every day?', options: ['How many', 'How much', 'Any'], correct: 1 },
+            { type: 'bConsultQuiz', title: 'Fill the gap', text: '_____ plates do we need for dinner?', options: ['How much', 'Some', 'How many'], correct: 2 },
+            { type: 'bWordBuilder', title: 'Sentence Assembly', words: ['food', 'you', 'spend', 'How', 'much', 'do', 'money', 'on', '?'], correct: ['How', 'much', 'money', 'do', 'you', 'spend', 'on', 'food', '?'] },
+
+            // Phase 7: Output Roleplay
+            { type: 'bGuide', title: 'Let\'s Cook', text: 'Your teacher is the Master Chef. You are the assistant. Check the pantry and answer the Chef\'s questions!', icon: 'fa-utensils' },
+            { type: 'bRoleplay', title: 'The Recipe', text: 'Answer your teacher using Some / Any / How much / How many.', cards: ['CHEF: "Do we have any milk for the cake?" (Tell him no)', 'CHEF: "How many eggs do we have?" (Invent a number)', 'CHEF: "I need some rice. Is there any rice?" (Tell him yes)'] },
+            { type: 'bDebateFlip', title: 'Lifestyle Choice', text: 'Final philosophical question for you:', cards: ['Do you prefer an empty, clean room, or a room full of memories, photos, and objects? Why?'] },
+
+            // Phase 8: Wrap up
+            { type: 'bWordBuilder', title: 'The Golden Rule', words: ['good', 'life', 'is', 'a', 'simple', 'life', 'A'], correct: ['A', 'simple', 'life', 'is', 'a', 'good', 'life'] },
+            { type: 'bGuide', title: 'Zen Master', text: 'You organized your grammar and your pantry perfectly! Less is more. <br><br><strong>XP Earned:</strong> ' + 250 + '<br><br>Proceed to your Homework module to practice.', icon: 'fa-yin-yang', isFinal: true }
+        ];
+
+        // --- TEMPLATE GENERATORS ---
+        const Templates = {
+            bGuide: (d) => `
+                <div class="flex flex-col items-center text-center fade-in space-y-6">
+                    <div class="w-28 h-28 rounded-full bg-panelDark flex items-center justify-center border-4 border-accentSage shadow-[0_0_40px_rgba(139,168,136,0.3)]">
+                        <i class="fa-solid ${d.icon} text-6xl text-accentSage glow-sage"></i>
+                    </div>
+                    <h2 class="font-heading text-4xl md:text-5xl font-light text-textLight mt-4 uppercase tracking-widest">${d.title}</h2>
+                    <p class="text-xl text-textMuted max-w-2xl leading-relaxed bg-panelDark p-8 rounded-2xl border border-panelHover mt-6">${d.text}</p>
+                    ${d.isFinal ? '' : `<button onclick="navStep(1)" class="mt-10 btn-wolf bg-accentSage text-bgDark font-bold py-4 px-12 rounded-full text-lg tracking-widest uppercase font-heading">ACKNOWLEDGE</button>`}
+                </div>`,
+            
+            bSlider: (d, i) => `
+                <div class="flex flex-col items-center w-full fade-in space-y-10">
+                    <h2 class="font-heading text-3xl md:text-4xl font-light text-accentBamboo uppercase tracking-widest">${d.title}</h2>
+                    <p class="text-xl text-textLight text-center">${d.text}</p>
+                    
+                    <div class="w-full max-w-2xl bg-panelDark p-10 rounded-3xl border border-panelHover shadow-2xl relative mt-8">
+                        <input type="range" min="1" max="10" value="5" class="zen-slider relative z-10" id="slider-${i}">
+                        <div class="flex justify-between text-sm text-textMuted mt-8 font-mono font-bold uppercase tracking-widest">
+                            <span class="text-accentSage">${d.minLabel}</span><span class="text-dangerRed">${d.maxLabel}</span>
+                        </div>
+                    </div>
+                    
+                    <div id="slider-followup-${i}" class="hidden w-full max-w-2xl bg-bgDark border-l-4 border-accentBamboo p-8 rounded-r-xl shadow-inner fade-in text-left mt-6">
+                        <p class="text-[10px] text-accentBamboo font-mono font-bold uppercase tracking-widest mb-3 glow-bamboo"><i class="fa-solid fa-comment-dots mr-2"></i> Master Inquiry</p>
+                        <p class="text-xl text-textLight font-medium leading-relaxed">${d.followUp}</p>
+                    </div>
+
+                    <button id="slider-btn-${i}" onclick="revealSliderFollowUp(${i})" class="btn-wolf bg-transparent border-2 border-accentBamboo text-accentBamboo hover:bg-accentBamboo hover:text-bgDark font-bold py-4 px-12 rounded-full text-lg tracking-widest uppercase transition-all shadow-[0_0_15px_rgba(212,184,134,0.2)] mt-8 font-heading">LOCK IN ANSWER</button>
+                </div>`,
+
+            bDebateFlip: (d, i) => `
+                <div class="flex flex-col items-center w-full max-w-4xl mx-auto fade-in h-full">
+                    <p class="text-[10px] font-bold text-accentBamboo uppercase tracking-[0.4em] mb-4 bg-accentBamboo/10 border border-accentBamboo/30 px-4 py-1.5 rounded-full font-mono glow-bamboo">Speaking Challenge</p>
+                    <h2 class="font-heading text-3xl font-light text-textLight mb-4 tracking-widest uppercase">${d.title}</h2>
+                    <p class="text-textMuted text-lg mb-10 text-center">${d.text}</p>
+                    
+                    <div class="flex flex-wrap justify-center gap-6 w-full">
+                        ${d.cards.map((card, idx) => `
+                            <div class="flip-container h-64 w-full md:w-[400px]" onclick="this.classList.toggle('flipped')">
+                                <div class="flip-inner">
+                                    <div class="flip-front shadow-lg">
+                                        <i class="fa-solid fa-comments text-4xl text-textMuted mb-4"></i>
+                                        <p class="font-mono text-accentSage font-bold tracking-widest uppercase">Card ${idx + 1}</p>
+                                        <p class="text-xs text-textMuted mt-4 opacity-50">Click to reveal</p>
+                                    </div>
+                                    <div class="flip-back shadow-[0_0_20px_rgba(139,168,136,0.2)]">
+                                        <p class="text-xl font-body font-medium text-textLight leading-relaxed">"${card}"</p>
+                                    </div>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                    
+                    <button onclick="navStep(1)" class="mt-12 btn-wolf bg-accentSage text-bgDark font-bold py-4 px-12 rounded-full tracking-widest uppercase font-heading shadow-[0_0_15px_rgba(139,168,136,0.3)]">DEBATE FINISHED</button>
+                </div>`,
+
+            bReader: (d) => `
+                <div class="flex flex-col w-full max-w-3xl mx-auto fade-in h-full justify-center">
+                    <h2 class="font-heading text-3xl font-light text-textLight mb-8 border-b border-panelHover pb-4 text-center tracking-widest uppercase"><i class="fa-solid fa-book-open text-accentBamboo glow-bamboo mr-3"></i>${d.title}</h2>
+                    <div class="border border-panelHover bg-bgDark rounded-2xl p-10 text-textLight leading-loose font-body text-xl shadow-inner text-center">
+                        ${d.text}
+                    </div>
+                    <div class="mt-10 flex justify-center">
+                        <button onclick="navStep(1)" class="btn-wolf bg-textLight text-bgDark font-bold py-4 px-12 rounded-full tracking-widest uppercase font-heading">READ AND LOGGED <i class="fa-solid fa-arrow-right ml-2"></i></button>
+                    </div>
+                </div>`,
+
+            bFridgeScanner: (d, i) => `
+                <div class="flex flex-col items-center justify-center w-full max-w-4xl mx-auto fade-in h-full">
+                    <p class="text-[10px] font-bold text-accentBamboo uppercase tracking-[0.4em] mb-4 bg-accentBamboo/10 border border-accentBamboo/30 px-4 py-1.5 rounded-full font-mono glow-bamboo">Pantry Scanner</p>
+                    <h2 class="font-heading text-3xl font-light text-textLight mb-8 tracking-widest uppercase">${d.title}</h2>
+                    
+                    <div class="w-full max-w-2xl bg-[#D4B886] rounded-t-[2rem] rounded-b-xl p-4 mb-8 shadow-2xl relative border-4 border-[#B89B6A]">
+                        <div class="absolute top-2 right-6 w-3 h-3 bg-green-500 rounded-full shadow-[0_0_10px_#22c55e]"></div>
+                        <div class="w-full bg-[#F3F4F6] rounded-xl p-6 min-h-[250px] shadow-[inset_0_10px_20px_rgba(0,0,0,0.1)] flex flex-col justify-center gap-10 relative overflow-hidden">
+                            <!-- Fridge Shelf -->
+                            <div class="w-full border-b-[6px] border-gray-300 pb-2 flex justify-around items-end min-h-[120px] relative z-20">
+                                ${d.items.map(item => fridgeItemHTML(item)).join('')}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="text-center bg-panelDark border border-panelHover p-6 rounded-2xl w-full cursor-pointer hover:border-white/20 transition-all" onclick="this.querySelector('.expected-ans').classList.remove('hidden')">
+                        <p class="text-accentSage font-mono text-sm tracking-widest mb-3 uppercase"><i class="fa-solid fa-microphone mr-2"></i> YOUR TASK (Speak out loud):</p>
+                        <p class="text-textLight font-body text-xl italic mb-2">"Teacher, ${d.expectedStart}..."</p>
+                        <p class="text-[10px] font-mono mt-4 text-textMuted opacity-50 uppercase">(Click to reveal answer)</p>
+                        <p class="text-accentBamboo font-body text-lg mt-4 hidden expected-ans">"${d.expected}"</p>
+                    </div>
+                    
+                    <button onclick="navStep(1); rewardSuccess();" class="mt-8 btn-wolf bg-accentSage text-bgDark font-bold py-4 px-12 rounded-full tracking-widest uppercase shadow-[0_0_15px_rgba(139,168,136,0.3)]">INSPECTION DONE</button>
+                </div>`,
+
+            bConsultQuiz: (d, i) => `
+                <div class="flex flex-col items-center justify-center w-full max-w-2xl mx-auto fade-in h-full" id="quiz-${i}">
+                    <h2 class="font-heading text-3xl font-light text-textLight mb-10 text-center leading-tight tracking-widest uppercase">${d.text}</h2>
+                    <div class="w-full flex flex-col gap-5">
+                        ${d.options.map((opt, idx) => `
+                            <button onclick="checkMCQ(this, ${idx}, ${d.correct})" class="w-full bg-panelDark border-2 border-panelHover hover:border-accentSage text-left p-6 rounded-2xl text-xl text-textLight transition-all shadow-sm">
+                                <span class="font-mono text-textMuted mr-4 opacity-50">${String.fromCharCode(65+idx)}.</span> ${opt}
+                            </button>
+                        `).join('')}
+                    </div>
+                </div>`,
+
+            bGrammar: (d) => `
+                <div class="flex flex-col items-center justify-center w-full max-w-3xl mx-auto fade-in h-full">
+                    <p class="text-[10px] font-bold text-bgDark uppercase tracking-[0.4em] mb-4 bg-${d.boxColor} px-4 py-1.5 rounded-full font-mono shadow-[0_0_10px_currentColor]">Grammar Rules</p>
+                    <h2 class="font-heading text-4xl font-light text-textLight mb-10 tracking-widest uppercase">${d.title}</h2>
+                    <div class="bg-panelDark border-l-8 border-${d.boxColor} p-10 rounded-r-2xl shadow-2xl w-full">
+                        <p class="text-xl text-textLight leading-loose">${d.ruleText}</p>
+                    </div>
+                    <button onclick="navStep(1)" class="mt-12 btn-wolf border-2 border-textLight text-textLight hover:bg-textLight hover:text-bgDark font-bold py-3 px-12 rounded-full tracking-widest uppercase font-heading">RULE LOGGED</button>
+                </div>`,
+
+            bTuner: (d, i) => `
+                <div class="flex flex-col items-center justify-center w-full fade-in h-full">
+                    <h2 class="font-heading text-4xl font-light text-textLight mb-14 tracking-widest uppercase">${d.title}</h2>
+                    <div class="relative w-full max-w-3xl bg-panelDark rounded-3xl border border-panelHover p-16 text-center cursor-pointer select-none transition-all duration-300 shadow-2xl" onclick="toggleTuner(${i})" id="tuner-box-${i}">
+                        <div id="tuner-icon-${i}" class="text-7xl mb-8"><i class="fa-solid ${d.iconA}"></i></div>
+                        <h3 id="tuner-text-${i}" class="text-3xl font-body font-bold text-textLight mb-6">${d.textA}</h3>
+                        <p id="tuner-hint-${i}" class="text-textMuted font-mono text-sm tracking-widest uppercase">${d.hintA}</p>
+                        
+                        <div class="absolute -bottom-5 left-1/2 -translate-x-1/2 bg-textLight text-bgDark px-6 py-2 rounded-full text-xs font-bold tracking-widest uppercase flex items-center gap-2 shadow-lg font-heading">
+                            <i class="fa-solid fa-arrows-rotate"></i> TAP TO SWITCH
+                        </div>
+                    </div>
+                    <button id="tuner-next-${i}" onclick="navStep(1)" class="mt-16 btn-wolf bg-accentBamboo text-bgDark font-bold py-4 px-16 rounded-full opacity-0 pointer-events-none transition-opacity duration-500 tracking-widest uppercase font-heading">CONFIRM</button>
+                </div>`,
+
+            bWordBuilder: (d, i) => {
+                let shuffled = [...d.words].sort(() => Math.random() - 0.5);
+                return `
+                <div class="flex flex-col items-center justify-center w-full max-w-4xl mx-auto fade-in h-full" id="wb-${i}">
+                    <p class="text-[10px] font-bold text-accentSage uppercase tracking-[0.4em] mb-4 bg-accentSage/10 border border-accentSage/30 px-4 py-1.5 rounded-full font-mono glow-sage">Sentence Builder</p>
+                    <h2 class="font-heading text-3xl font-light text-textLight mb-10 tracking-widest uppercase">${d.title}</h2>
+                    
+                    <div id="wb-ans-${i}" class="w-full min-h-[100px] bg-bgDark border-2 border-dashed border-panelHover rounded-2xl p-6 flex flex-wrap gap-4 items-center justify-center mb-10 transition-colors shadow-inner">
+                    </div>
+                    
+                    <div id="wb-bank-${i}" class="w-full flex flex-wrap justify-center gap-4">
+                        ${shuffled.map(w => `<div onclick="moveWord(this, ${i})" class="pill bg-panelDark border border-panelHover text-textLight px-6 py-4 rounded-xl font-mono text-xl shadow-md hover:border-accentSage hover:text-accentSage transition-all" data-word="${w.replace(/"/g, '&quot;')}">${w}</div>`).join('')}
+                    </div>
+
+                    <button onclick="checkWordBuilder(${i}, '${d.correct.join('|').replace(/"/g, '&quot;')}')" class="mt-12 btn-wolf bg-textLight text-bgDark font-bold py-4 px-12 rounded-full tracking-widest uppercase font-heading">BUILD SENTENCE</button>
+                </div>`
+            },
+
+            bKanban: (d, i) => `
+                <div class="flex flex-col items-center justify-center w-full max-w-5xl mx-auto fade-in h-full" id="match-${i}">
+                    <h2 class="font-heading text-4xl font-light text-textLight mb-4 text-center tracking-widest uppercase">${d.title}</h2>
+                    <p class="text-textMuted text-center mb-12 text-lg">Click an item, then assign it to the correct column.</p>
+                    
+                    <div class="grid grid-cols-2 gap-10 mb-12 w-full">
+                        <div class="bg-bgDark border border-accentSage rounded-3xl p-6 min-h-[250px] shadow-[0_0_20px_rgba(139,168,136,0.15)] relative" id="catA-${i}">
+                            <div class="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-accentSage text-bgDark font-bold font-mono px-6 py-2 rounded-full whitespace-nowrap tracking-widest">${d.catA}</div>
+                            <div class="flex flex-col gap-3 mt-6 drop-area h-full" data-cat="A"></div>
+                        </div>
+                        <div class="bg-bgDark border border-accentBamboo rounded-3xl p-6 min-h-[250px] shadow-[0_0_20px_rgba(212,184,134,0.15)] relative" id="catB-${i}">
+                            <div class="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-accentBamboo text-bgDark font-bold font-mono px-6 py-2 rounded-full whitespace-nowrap tracking-widest">${d.catB}</div>
+                            <div class="flex flex-col gap-3 mt-6 drop-area h-full" data-cat="B"></div>
+                        </div>
+                    </div>
+                    
+                    <div id="match-items-${i}" class="flex flex-wrap justify-center gap-4">
+                        ${[...d.items].sort(()=>Math.random()-0.5).map((item, idx) => `
+                            <button onclick="selectMatchItem(this)" class="match-item bg-panelDark border-2 border-panelHover text-textLight px-6 py-3 rounded-xl hover:border-textLight transition-all font-body text-sm shadow-sm" data-truecat="${item.cat}">${item.text}</button>
+                        `).join('')}
+                    </div>
+                    
+                    <div class="flex justify-center mt-12">
+                        <button onclick="checkMatchMaker(${i}, ${d.items.length})" class="btn-wolf bg-textLight text-bgDark font-bold py-4 px-16 rounded-full tracking-widest uppercase font-heading">VERIFY SORTING</button>
+                    </div>
+                </div>`,
+
+            bBamboozle: (d, i) => `
+                <div class="flex flex-col items-center justify-center w-full max-w-3xl mx-auto fade-in h-full" id="bam-${i}">
+                    <div class="text-accentSage font-mono text-sm tracking-[0.3em] mb-6 border border-accentSage/30 px-4 py-1 rounded-full uppercase glow-sage">Reflex Check</div>
+                    <div class="bg-panelDark border border-panelHover rounded-3xl p-12 w-full text-center shadow-2xl mb-12 relative overflow-hidden">
+                        <div class="absolute -right-10 -top-10 text-9xl opacity-5 text-textLight"><i class="fa-solid fa-bolt"></i></div>
+                        <h2 class="font-body text-3xl font-medium text-textLight leading-relaxed relative z-10 italic">"${d.statement}"</h2>
+                    </div>
+                    <div class="grid grid-cols-2 gap-8 w-full">
+                        <button onclick="checkBamboozle(${i}, true, ${d.isTrue})" class="btn-wolf border-2 border-accentSage text-accentSage hover:bg-accentSage hover:text-bgDark font-bold text-3xl py-8 rounded-2xl transition-all shadow-[0_0_20px_rgba(139,168,136,0.15)] font-heading tracking-widest">TRUE</button>
+                        <button onclick="checkBamboozle(${i}, false, ${d.isTrue})" class="btn-wolf border-2 border-dangerRed text-dangerRed hover:bg-dangerRed hover:text-textLight font-bold text-3xl py-8 rounded-2xl transition-all shadow-[0_0_20px_rgba(229,115,115,0.15)] font-heading tracking-widest">FALSE</button>
+                    </div>
+                </div>`,
+
+            bRoleplay: (d) => `
+                <div class="flex flex-col items-center justify-center w-full max-w-3xl mx-auto fade-in h-full">
+                    <h2 class="font-heading text-4xl font-light text-textLight mb-4 tracking-widest uppercase"><i class="fa-solid fa-utensils text-accentBamboo mr-4"></i>${d.title}</h2>
+                    <p class="text-textMuted text-xl text-center mb-12">${d.text}</p>
+                    
+                    <div class="grid gap-6 w-full">
+                        ${d.cards.map((card, idx) => `
+                            <div onclick="this.querySelector('.cover').style.opacity=0; this.querySelector('.cover').style.pointerEvents='none';" class="relative bg-panelDark border border-panelHover hover:border-accentBamboo transition-colors rounded-2xl p-8 text-center cursor-pointer min-h-[140px] flex items-center justify-center overflow-hidden group shadow-md">
+                                <p class="text-2xl text-textLight font-body font-medium leading-relaxed italic">"${card}"</p>
+                                <div class="cover absolute inset-0 bg-bgDark flex items-center justify-center transition-opacity duration-400">
+                                    <span class="text-accentBamboo font-mono font-bold tracking-[0.2em] uppercase bg-accentBamboo/10 px-6 py-2 rounded-full border border-accentBamboo/30"><i class="fa-solid fa-eye mr-2"></i>Reveal Task</span>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                    <button onclick="navStep(1)" class="mt-14 btn-wolf border border-textLight text-textLight hover:bg-textLight hover:text-bgDark font-bold py-4 px-12 rounded-full tracking-widest uppercase font-heading">END SESSION</button>
+                </div>`
+        };
+
+        // --- CORE LOGIC ---
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(err => console.log(err));
+            } else {
+                if (document.exitFullscreen) document.exitFullscreen();
+            }
+        }
+
+        function startGame() {
+            document.getElementById('dashboard').classList.add('hidden');
+            buildIndex();
+            updateHUD();
+            renderStep();
+        }
+
+        function buildIndex() {
+            const list = document.getElementById('index-list');
+            list.innerHTML = lessonData.map((d, i) => `<button onclick="jumpTo(${i})" class="text-left px-3 py-2 rounded hover:bg-panelHover transition-colors ${i===0?'text-accentSage font-bold':''}"><span class="font-mono mr-2 opacity-50">${i+1}.</span> ${d.title}</button>`).join('');
+        }
+
+        function updateHUD() {
+            document.getElementById('bar-hp').style.width = `${Math.max(0, state.hp)}%`;
+            document.getElementById('txt-hp').innerText = Math.max(0, state.hp);
+            
+            document.getElementById('bar-xp').style.width = `${(state.xp/250)*100}%`;
+            document.getElementById('txt-xp').innerText = `${state.xp}/250`;
+            
+            document.getElementById('step-counter').innerText = `${state.current + 1} / ${state.maxSteps}`;
+            
+            document.getElementById('btn-prev').disabled = state.current === 0;
+            document.getElementById('btn-next').disabled = state.current === state.maxSteps - 1;
+
+            const items = document.getElementById('index-list').children;
+            if(items.length > 0) {
+                for(let i=0; i<items.length; i++) {
+                    items[i].className = `text-left px-4 py-3 rounded-lg hover:bg-panelHover transition-colors ${i === state.current ? 'text-accentSage font-bold bg-panelDark border-l-2 border-accentSage shadow-sm' : 'text-textMuted'}`;
+                }
+            }
+        }
+
+        function renderStep() {
+            const container = document.getElementById('step-container');
+            container.style.opacity = 0;
+            
+            document.getElementById('mission-arena').classList.remove('rpg-mode');
+            
+            setTimeout(() => {
+                const stepData = lessonData[state.current];
+                container.innerHTML = Templates[stepData.type](stepData, state.current);
+                container.style.opacity = 1;
+            }, 200);
+            updateHUD();
+        }
+
+        function navStep(dir) {
+            let newCurrent = state.current + dir;
+            if (newCurrent >= 0 && newCurrent < state.maxSteps) {
+                state.current = newCurrent;
+                renderStep();
+            }
+        }
+
+        function jumpTo(index) {
+            state.current = index;
+            renderStep();
+            document.getElementById('drawer-nav').classList.remove('open');
+        }
+
+        function toggleDrawer(id) {
+            const el = document.getElementById(`drawer-${id}`);
+            if (id === 'whiteboard') {
+                const td = document.getElementById('drawer-teacher');
+                if (td) td.classList.remove('open');
+            }
+            if (id === 'teacher') {
+                const wd = document.getElementById('drawer-whiteboard');
+                if (wd) wd.classList.remove('open');
+            }
+            el.classList.toggle('open');
+        }
+
+        function triggerPraise(main, sub) {
+            document.getElementById('drawer-teacher').classList.remove('open');
+            const overlay = document.getElementById('praise-overlay'); 
+            const card = document.getElementById('praise-card');
+            
+            if(main === 'PERFECT GRAMMAR!') {
+                card.className = "glass-panel p-16 md:p-24 rounded-[3rem] text-center transform scale-50 transition-transform duration-500 border-t-8 border-accentSage shadow-[0_0_50px_rgba(139,168,136,0.15)] bg-panelDark";
+                document.getElementById('praise-main').className = "font-heading text-5xl md:text-7xl font-light tracking-widest uppercase mb-4 text-accentSage glow-sage";
+            } else {
+                card.className = "glass-panel p-16 md:p-24 rounded-[3rem] text-center transform scale-50 transition-transform duration-500 border-t-8 border-accentBamboo shadow-[0_0_50px_rgba(212,184,134,0.15)] bg-panelDark";
+                document.getElementById('praise-main').className = "font-heading text-5xl md:text-7xl font-light tracking-widest uppercase mb-4 text-accentBamboo glow-bamboo";
+            }
+            
+            document.getElementById('praise-main').innerText = main; 
+            document.getElementById('praise-sub').innerText = sub;
+            
+            overlay.classList.remove('opacity-0', 'pointer-events-none');
+            setTimeout(() => card.classList.replace('scale-50', 'scale-100'), 50); 
+            shootConfetti();
+            
+            setTimeout(() => { 
+                card.classList.replace('scale-100', 'scale-50'); 
+                overlay.classList.add('opacity-0', 'pointer-events-none'); 
+            }, 2500);
+        }
+
+        function applyDamage(elId) {
+            const el = document.getElementById(elId);
+            state.hp -= 10;
+            if(state.hp < 0) state.hp = 0;
+            if(el) {
+                el.classList.remove('shake');
+                void el.offsetWidth;
+                el.classList.add('shake');
+            }
+            updateHUD();
+        }
+
+        function rewardSuccess() {
+            state.xp += 10;
+            updateHUD();
+            shootConfetti();
+        }
+
+        // --- MINI GAME LOGIC ---
+
+        function revealSliderFollowUp(i) {
+            const btn = document.getElementById(`slider-btn-${i}`);
+            const fb = document.getElementById(`slider-followup-${i}`);
+            
+            if (btn.innerText === 'LOCK IN ANSWER') {
+                fb.classList.remove('hidden');
+                btn.innerText = 'CONTINUE';
+                btn.classList.replace('border-accentBamboo', 'border-accentSage');
+                btn.classList.replace('text-accentBamboo', 'text-accentSage');
+                btn.classList.replace('hover:bg-accentBamboo', 'hover:bg-accentSage');
+                btn.classList.replace('shadow-[0_0_15px_rgba(212,184,134,0.2)]', 'shadow-[0_0_15px_rgba(139,168,136,0.3)]');
+            } else {
+                navStep(1);
+            }
+        }
+
+        function checkMCQ(btn, selected, correct) {
+            const parent = btn.parentElement;
+            Array.from(parent.children).forEach(b => b.disabled = true);
+            
+            if (selected === correct) {
+                btn.classList.add('bg-accentSage', 'border-accentSage', 'text-bgDark');
+                btn.classList.replace('text-textLight', 'text-bgDark');
+                rewardSuccess();
+                setTimeout(() => navStep(1), 1500); 
+            } else {
+                btn.classList.add('bg-dangerRed', 'border-dangerRed', 'text-textLight');
+                parent.children[correct].classList.add('border-accentSage', 'text-accentSage'); 
+                applyDamage(`quiz-${state.current}`);
+                setTimeout(() => navStep(1), 2000); 
+            }
+        }
+
+        let tunerState = {};
+        function toggleTuner(i) {
+            const d = lessonData[i];
+            const isB = tunerState[i];
+            
+            document.getElementById(`tuner-text-${i}`).innerText = isB ? d.textA : d.textB;
+            document.getElementById(`tuner-hint-${i}`).innerText = isB ? d.hintA : d.hintB;
+            document.getElementById(`tuner-icon-${i}`).innerHTML = `<i class="fa-solid ${isB ? d.iconA : d.iconB}"></i>`;
+            
+            tunerState[i] = !isB;
+            document.getElementById(`tuner-next-${i}`).classList.remove('opacity-0', 'pointer-events-none');
+        }
+
+        function moveWord(el, i) {
+            const ansArea = document.getElementById(`wb-ans-${i}`);
+            const bankArea = document.getElementById(`wb-bank-${i}`);
+            if (el.parentElement === bankArea) ansArea.appendChild(el);
+            else bankArea.appendChild(el);
+        }
+
+        function checkWordBuilder(i, correctStr) {
+            const ansArea = document.getElementById(`wb-ans-${i}`);
+            const currentArr = Array.from(ansArea.children).map(el => el.getAttribute('data-word'));
+            const currentStr = currentArr.join('|');
+            
+            if (currentStr === correctStr) {
+                ansArea.classList.replace('border-panelHover', 'border-accentSage');
+                rewardSuccess();
+                setTimeout(() => navStep(1), 1500);
+            } else {
+                applyDamage(`wb-${i}`);
+            }
+        }
+
+        let selectedMatchItem = null;
+        function selectMatchItem(el) {
+            if(selectedMatchItem) selectedMatchItem.classList.remove('border-textLight', 'bg-panelHover');
+            selectedMatchItem = el;
+            el.classList.add('border-textLight', 'bg-panelHover');
+        }
+        
+        document.addEventListener('click', function(e) {
+            const dropArea = e.target.closest('.drop-area');
+            if(dropArea && selectedMatchItem) {
+                dropArea.appendChild(selectedMatchItem);
+                selectedMatchItem.classList.remove('border-textLight', 'bg-panelHover');
+                selectedMatchItem.setAttribute('data-currentcat', dropArea.getAttribute('data-cat'));
+                selectedMatchItem = null;
+            }
+        });
+
+        function checkMatchMaker(i, total) {
+            const items = document.getElementById(`match-${i}`).querySelectorAll('.match-item');
+            let placed = 0;
+            let correct = 0;
+            
+            items.forEach(item => {
+                if(item.hasAttribute('data-currentcat')) {
+                    placed++;
+                    if(item.getAttribute('data-currentcat') === item.getAttribute('data-truecat')) correct++;
+                }
+            });
+
+            if(placed < total) { alert("Place all items first!"); return; }
+
+            if(correct === total) { 
+                rewardSuccess(); 
+                setTimeout(() => navStep(1), 1500);
+            } 
+            else { applyDamage(`match-${i}`); }
+        }
+
+        function checkBamboozle(i, choice, isTrue) {
+            const parent = document.getElementById(`bam-${i}`);
+            const btns = parent.querySelectorAll('button');
+            btns.forEach(b => b.disabled = true);
+
+            if (choice === isTrue) {
+                rewardSuccess();
+                setTimeout(() => navStep(1), 1500);
+            } else {
+                applyDamage(`bam-${i}`);
+                setTimeout(() => navStep(1), 1500);
+            }
+        }
+
+        // --- CONFETTI ENGINE ---
+        const canvas = document.getElementById('confetti-canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        let particles = [];
+
+        window.addEventListener('resize', () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; });
+
+        function shootConfetti() {
+            const colors = ['#8BA888', '#D4B886', '#F5F5F0', '#A8A29E'];
+            for (let i = 0; i < 100; i++) {
+                particles.push({
+                    x: canvas.width / 2, y: canvas.height / 2,
+                    r: Math.random() * 6 + 2,
+                    dx: Math.random() * 20 - 10, dy: Math.random() * -20 - 5,
+                    color: colors[Math.floor(Math.random() * colors.length)],
+                    tilt: Math.floor(Math.random() * 10) - 10,
+                    tiltAngle: 0, tiltAngleInc: (Math.random() * 0.07) + 0.05
+                });
+            }
+        }
+
+        function animateConfetti() {
+            requestAnimationFrame(animateConfetti);
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            particles.forEach((p, index) => {
+                p.tiltAngle += p.tiltAngleInc;
+                p.y += (Math.cos(p.tiltAngle) + 1 + p.r / 2) / 2;
+                p.x += Math.sin(p.tiltAngle) * 2;
+                p.dy += 0.5;
+                p.y += p.dy;
+                p.x += p.dx;
+                
+                ctx.beginPath();
+                ctx.lineWidth = p.r;
+                ctx.strokeStyle = p.color;
+                ctx.moveTo(p.x + p.tilt + p.r, p.y);
+                ctx.lineTo(p.x + p.tilt, p.y + p.tilt + p.r);
+                ctx.stroke();
+
+                if (p.y > canvas.height) particles.splice(index, 1);
+            });
+        }
+        animateConfetti();
+
+    </script>
+</body>
+</html>
